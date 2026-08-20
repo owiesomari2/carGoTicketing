@@ -219,6 +219,50 @@
     .date-input { width: 150px; }
     .btn-clear-filters { font-size: 0.8rem; font-weight: 600; color: #6b7280; }
     .btn-clear-filters:hover { color: #dc2626; }
+
+    .searchable-select { position: relative; }
+    .searchable-dropdown {
+      position: absolute;
+      top: 100%;
+      left: 0;
+      right: 0;
+      z-index: 1060;
+      max-height: 220px;
+      overflow-y: auto;
+      background: #fff;
+      border: 1px solid #e2e5ee;
+      border-radius: 10px;
+      box-shadow: 0 8px 20px rgba(16, 24, 40, 0.12);
+      display: none;
+    }
+    .searchable-dropdown.open { display: block; }
+    .user-story-option {
+      padding: 0.5rem 0.75rem;
+      font-size: 0.85rem;
+      cursor: pointer;
+      border-bottom: 1px solid #f0f1f5;
+    }
+    .user-story-option:last-child { border-bottom: none; }
+    .user-story-option:hover { background: #eef2ff; }
+    .user-story-option.empty { color: #9aa3b2; cursor: default; }
+    .user-story-option.empty:hover { background: none; }
+    .us-id { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-weight: 600; color: #4f46e5; }
+    .us-title { color: #6b7280; }
+
+    .subtask-row {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      padding: 0.6rem 0.75rem;
+      border: 1px solid #e8eaf2;
+      border-radius: 10px;
+      margin-bottom: 0.5rem;
+      cursor: pointer;
+      transition: background 0.15s ease, border-color 0.15s ease;
+    }
+    .subtask-row:hover { background: #eef2ff; border-color: #c7d2fe; }
+    .subtask-title { flex: 1; font-weight: 600; font-size: 0.9rem; }
+    .subtask-badge { font-size: 0.72rem; font-weight: 600; color: #fff; padding: 0.2rem 0.55rem; border-radius: 999px; }
   </style>
 </head>
 <body>
@@ -319,45 +363,64 @@
         </div>
         <div class="modal-body">
           <input type="hidden" id="editingTicketId" />
-          <div class="mb-3">
-            <label class="form-label fw-semibold">Title</label>
-            <input type="text" class="form-control" id="inputTitle" required maxlength="120" placeholder="Ticket title" />
-          </div>
-          <div class="mb-3">
-            <label class="form-label fw-semibold">Description</label>
-            <textarea class="form-control" id="inputText" rows="4" placeholder="Detailed description"></textarea>
-          </div>
-          <div class="mb-3">
-            <label class="form-label fw-semibold">Platform</label>
-            <select class="form-select" id="inputPlatform">
-              <option>Android</option>
-              <option>iOS</option>
-              <option>Backend</option>
-              <option>Web</option>
-            </select>
-          </div>
-          <div class="mb-3">
-            <label class="form-label fw-semibold">Added by</label>
-            <select class="form-select" id="inputAddedBy">
-              <option>Owies</option>
-              <option>Ashraf</option>
-            </select>
-          </div>
-          <div class="mb-3">
-            <label class="form-label fw-semibold">Assignee</label>
-            <select class="form-select" id="inputAssignee">
-              <option value="">Unassigned</option>
-              <option>Owies</option>
-              <option>Ashraf</option>
-            </select>
-          </div>
-          <div class="mb-2">
-            <label class="form-label fw-semibold">Status</label>
-            <select class="form-select" id="inputStatus">
-              <option>To Do</option>
-              <option>In Progress</option>
-              <option>Done</option>
-            </select>
+          <div class="row g-3">
+            <div class="col-12">
+              <label class="form-label fw-semibold">Title</label>
+              <input type="text" class="form-control" id="inputTitle" required maxlength="120" placeholder="Ticket title" />
+            </div>
+            <div class="col-12">
+              <label class="form-label fw-semibold">Description</label>
+              <textarea class="form-control" id="inputText" rows="4" placeholder="Detailed description"></textarea>
+            </div>
+            <div class="col-md-6">
+              <label class="form-label fw-semibold">Platform</label>
+              <select class="form-select" id="inputPlatform">
+                <option>Android</option>
+                <option>iOS</option>
+                <option>Backend</option>
+                <option>Web</option>
+              </select>
+            </div>
+            <div class="col-md-6">
+              <label class="form-label fw-semibold">Issue Type</label>
+              <select class="form-select" id="inputIssueType">
+                <option>User Story</option>
+                <option>Subtask</option>
+                <option>Bug</option>
+                <option>Note</option>
+              </select>
+            </div>
+            <div class="col-md-6 d-none" id="parentStoryField">
+              <label class="form-label fw-semibold">Linked User Story</label>
+              <input type="hidden" id="inputParentStoryId" />
+              <div class="searchable-select">
+                <input type="text" class="form-control" id="inputParentStorySearch" placeholder="Search user story by ID or title..." autocomplete="off" />
+                <div class="searchable-dropdown" id="userStoryDropdown"></div>
+              </div>
+            </div>
+            <div class="col-md-6">
+              <label class="form-label fw-semibold">Added by</label>
+              <select class="form-select" id="inputAddedBy">
+                <option>Owies</option>
+                <option>Ashraf</option>
+              </select>
+            </div>
+            <div class="col-md-6">
+              <label class="form-label fw-semibold">Assignee</label>
+              <select class="form-select" id="inputAssignee">
+                <option value="">Unassigned</option>
+                <option>Owies</option>
+                <option>Ashraf</option>
+              </select>
+            </div>
+            <div class="col-md-6">
+              <label class="form-label fw-semibold">Status</label>
+              <select class="form-select" id="inputStatus">
+                <option>To Do</option>
+                <option>In Progress</option>
+                <option>Done</option>
+              </select>
+            </div>
           </div>
         </div>
         <div class="modal-footer">
@@ -368,6 +431,34 @@
           </button>
         </div>
       </form>
+    </div>
+  </div>
+
+  <div class="modal fade" id="detailsModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title" id="detailsModalTitle">Ticket Details</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+        <div class="modal-body" id="detailsModalBody"></div>
+        <div class="modal-footer" id="detailsModalFooter"></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="modal fade" id="subtasksModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title" id="subtasksModalTitle">Subtasks</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+        <div class="modal-body" id="subtasksModalBody"></div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-outline-secondary rounded-3" data-bs-dismiss="modal">Close</button>
+        </div>
+      </div>
     </div>
   </div>
 
@@ -521,6 +612,62 @@ const firebaseConfig = {
         });
       }
 
+      function toggleParentStoryField() {
+        const isSubtask = document.getElementById("inputIssueType").value === "Subtask";
+        document.getElementById("parentStoryField").classList.toggle("d-none", !isSubtask);
+      }
+
+      function setupParentStorySelect() {
+        const searchInput = document.getElementById("inputParentStorySearch");
+        const dropdown = document.getElementById("userStoryDropdown");
+
+        function renderDropdown(q) {
+          const editingId = document.getElementById("editingTicketId").value;
+          const items = tickets.filter((t) => t.issueType === "User Story" && t.id !== editingId);
+          const filtered = q
+            ? items.filter((t) => ((t.ticketId || "") + " " + (t.title || "")).toLowerCase().includes(q.toLowerCase()))
+            : items;
+          if (!filtered.length) {
+            dropdown.innerHTML = `<div class="user-story-option empty">No user stories found</div>`;
+            return;
+          }
+          dropdown.innerHTML = filtered.map((t) => `
+            <div class="user-story-option" data-id="${t.id}">
+              <span class="us-id">${escapeHtml(t.ticketId || t.id)}</span>
+              <span class="us-title">— ${escapeHtml(t.title)}</span>
+            </div>`).join("");
+        }
+
+        searchInput.addEventListener("focus", () => {
+          renderDropdown(searchInput.value);
+          dropdown.classList.add("open");
+        });
+        searchInput.addEventListener("input", () => {
+          document.getElementById("inputParentStoryId").value = "";
+          renderDropdown(searchInput.value);
+          dropdown.classList.add("open");
+        });
+        searchInput.addEventListener("keydown", (e) => {
+          if (e.key === "Enter") e.preventDefault();
+        });
+
+        dropdown.addEventListener("click", (e) => {
+          const opt = e.target.closest(".user-story-option");
+          if (!opt || opt.classList.contains("empty")) return;
+          const t = tickets.find((x) => x.id === opt.dataset.id);
+          if (!t) return;
+          document.getElementById("inputParentStoryId").value = t.id;
+          searchInput.value = `${t.ticketId || t.id} — ${t.title}`;
+          dropdown.classList.remove("open");
+        });
+
+        document.addEventListener("click", (e) => {
+          if (!e.target.closest(".searchable-select")) dropdown.classList.remove("open");
+        });
+
+        document.getElementById("inputIssueType").addEventListener("change", toggleParentStoryField);
+      }
+
       function showToast(message) {
         document.getElementById("toastBody").textContent = message;
         bootstrap.Toast.getOrCreateInstance(document.getElementById("toast")).show();
@@ -569,10 +716,71 @@ const firebaseConfig = {
         endDrag();
       }
 
+      function detailsRow(label, value) {
+        return `<div class="col-md-6 mb-3">
+          <div class="fw-semibold text-muted" style="font-size: 0.72rem; text-transform: uppercase; letter-spacing: 0.5px;">${label}</div>
+          <div style="font-size: 0.92rem;">${value}</div>
+        </div>`;
+      }
+
+      function openSubtasksModal(story) {
+        const subs = tickets.filter((t) => t.parentStoryId === story.id);
+        document.getElementById("subtasksModalTitle").textContent = `Subtasks — ${story.ticketId || story.id}`;
+        const body = document.getElementById("subtasksModalBody");
+        if (!subs.length) {
+          body.innerHTML = `<div class="empty-state">No subtasks linked</div>`;
+        } else {
+          body.innerHTML = subs.map((s) => `
+            <div class="subtask-row" data-id="${s.id}">
+              <span class="us-id">${escapeHtml(s.ticketId || s.id)}</span>
+              <span class="subtask-title">${escapeHtml(s.title)}</span>
+              <span class="subtask-badge" style="background:${ACCENTS[s.status] || "#94a3b8"}">${escapeHtml(s.status)}</span>
+              <span class="text-muted small">${escapeHtml(s.assignee || "Unassigned")}</span>
+            </div>`).join("");
+          body.querySelectorAll(".subtask-row").forEach((row) => {
+            row.addEventListener("click", () => {
+              const t = tickets.find((x) => x.id === row.dataset.id);
+              bootstrap.Modal.getInstance(document.getElementById("subtasksModal")).hide();
+              openTicketDetails(t);
+            });
+          });
+        }
+        bootstrap.Modal.getOrCreateInstance(document.getElementById("subtasksModal")).show();
+      }
+
+      function openTicketDetails(ticket) {
+        const parent = ticket.parentStoryId ? tickets.find((x) => x.id === ticket.parentStoryId) : null;
+        document.getElementById("detailsModalTitle").textContent = ticket.ticketId || ticket.id;
+        document.getElementById("detailsModalBody").innerHTML = `
+          <div class="row g-0">
+            ${detailsRow("Title", escapeHtml(ticket.title))}
+            ${detailsRow("Status", escapeHtml(ticket.status))}
+            ${detailsRow("Issue Type", escapeHtml(ticket.issueType || "User Story"))}
+            ${detailsRow("Platform", escapeHtml(ticket.platform || "Web"))}
+            ${detailsRow("Added by", escapeHtml(ticket.addedBy || "Owies"))}
+            ${detailsRow("Assignee", escapeHtml(ticket.assignee || "Unassigned"))}
+            ${ticket.parentStoryId ? detailsRow("Linked User Story", escapeHtml(parent ? `${parent.ticketId || parent.id} — ${parent.title}` : "—")) : ""}
+            ${detailsRow("Created", formatDate(ticket.createdAt))}
+            ${detailsRow("Updated", formatDate(ticket.updatedAt))}
+            <div class="col-12 mb-3">
+              <div class="fw-semibold text-muted" style="font-size: 0.72rem; text-transform: uppercase; letter-spacing: 0.5px;">Description</div>
+              <div style="font-size: 0.92rem; white-space: pre-wrap; word-break: break-word;">${escapeHtml(ticket.text || "—")}</div>
+            </div>
+          </div>`;
+        const subTasks = tickets.filter((t) => t.parentStoryId === ticket.id);
+        document.getElementById("detailsModalFooter").innerHTML = `
+          ${ticket.issueType === "User Story" && subTasks.length ? `<button type="button" class="btn btn-outline-primary rounded-3 me-auto" id="btnShowSubtasks">Show Subtasks (${subTasks.length})</button>` : ""}
+          <button type="button" class="btn btn-primary-custom" data-bs-dismiss="modal">Close</button>`;
+        const btn = document.getElementById("btnShowSubtasks");
+        if (btn) btn.addEventListener("click", () => openSubtasksModal(ticket));
+        bootstrap.Modal.getOrCreateInstance(document.getElementById("detailsModal")).show();
+      }
+
       function ticketCard(ticket) {
         const div = document.createElement("div");
+        const isNote = ticket.issueType === "Note";
         div.className = "card ticket-card mb-2";
-        div.draggable = true;
+        div.draggable = !isNote;
         div.style.setProperty("--accent", ACCENTS[ticket.status] || "#94a3b8");
         div.innerHTML = `
           <div class="card-body p-2">
@@ -589,11 +797,13 @@ const firebaseConfig = {
               <span class="meta-badge">${escapeHtml(ticket.addedBy || "Owies")}</span>
               <span class="meta-badge">${escapeHtml(ticket.platform || "Web")}</span>
               <span class="meta-badge">&#128101; ${escapeHtml(ticket.assignee || "Unassigned")}</span>
+              <span class="meta-badge">${escapeHtml(ticket.issueType || "User Story")}</span>
+              ${ticket.parentStoryId ? `<span class="meta-badge" title="Linked user story">&#8618; ${escapeHtml((tickets.find((x) => x.id === ticket.parentStoryId) || {}).ticketId || "")}</span>` : ""}
               <span class="meta-badge">Created: ${formatDate(ticket.createdAt)}</span>
               <span class="meta-badge">Updated: ${formatDate(ticket.updatedAt)}</span>
             </div>
             <div class="d-flex justify-content-between align-items-center">
-              <span class="drag-hint">&#9776; drag</span>
+              ${isNote ? "" : `<span class="drag-hint">&#9776; drag</span>`}
               <select class="form-select form-select-sm status-select w-auto">
                 ${STATUSES.map((s) => `<option ${s === ticket.status ? "selected" : ""}>${s}</option>`).join("")}
               </select>
@@ -608,6 +818,10 @@ const firebaseConfig = {
           setTimeout(() => div.classList.add("dragging"), 0);
         });
         div.addEventListener("dragend", endDrag);
+        div.addEventListener("click", (e) => {
+          if (isDragging || e.target.closest(".card-actions") || e.target.closest(".status-select")) return;
+          openTicketDetails(ticket);
+        });
 
         div.querySelector(".status-select").addEventListener("change", (e) => {
           ticketsRef.doc(ticket.id).update({
@@ -666,6 +880,7 @@ const firebaseConfig = {
       }
       setupDropZones();
       setupFilters();
+      setupParentStorySelect();
 
       function openTicketModal(ticket) {
         document.getElementById("ticketModalTitle").textContent = ticket ? "Edit Ticket" : "New Ticket";
@@ -677,6 +892,12 @@ const firebaseConfig = {
         document.getElementById("inputAddedBy").value = ticket ? ticket.addedBy || "Owies" : "Owies";
         document.getElementById("inputPlatform").value = ticket ? ticket.platform || "Web" : "Android";
         document.getElementById("inputAssignee").value = ticket ? ticket.assignee || "" : "";
+        document.getElementById("inputIssueType").value = ticket ? ticket.issueType || "User Story" : "User Story";
+        const parentId = ticket && ticket.parentStoryId ? ticket.parentStoryId : "";
+        document.getElementById("inputParentStoryId").value = parentId;
+        const parent = parentId ? tickets.find((x) => x.id === parentId) : null;
+        document.getElementById("inputParentStorySearch").value = parent ? `${parent.ticketId || parent.id} — ${parent.title}` : "";
+        toggleParentStoryField();
         ticketModal.show();
       }
 
@@ -693,6 +914,13 @@ const firebaseConfig = {
         const addedBy = document.getElementById("inputAddedBy").value;
         const platform = document.getElementById("inputPlatform").value;
         const assignee = document.getElementById("inputAssignee").value;
+        const issueType = document.getElementById("inputIssueType").value;
+        const parentStoryId = document.getElementById("inputParentStoryId").value;
+        if (issueType === "Subtask" && !parentStoryId) {
+          showToast("Please link a user story for this subtask");
+          document.getElementById("inputParentStorySearch").focus();
+          return;
+        }
         saveBtn.disabled = true;
         saveSpinner.classList.remove("d-none");
         try {
@@ -703,6 +931,8 @@ const firebaseConfig = {
               addedBy,
               platform,
               assignee,
+              issueType,
+              parentStoryId: issueType === "Subtask" ? parentStoryId : "",
               updatedAt: firebase.firestore.FieldValue.serverTimestamp()
             });
             showToast("Ticket updated");
@@ -715,6 +945,8 @@ const firebaseConfig = {
               addedBy,
               platform,
               assignee,
+              issueType,
+              parentStoryId: issueType === "Subtask" ? parentStoryId : "",
               status,
               createdAt: firebase.firestore.FieldValue.serverTimestamp(),
               updatedAt: firebase.firestore.FieldValue.serverTimestamp()
