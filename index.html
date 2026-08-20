@@ -304,6 +304,15 @@
             <button type="button" class="chip" data-platform="Backend">Backend</button>
             <button type="button" class="chip" data-platform="Web">Web</button>
             <span class="filter-divider"></span>
+            <span class="filter-label">Issue Type</span>
+            <select class="form-select form-select-sm w-auto" id="inputIssueTypeFilter">
+              <option value="">All types</option>
+              <option>User Story</option>
+              <option>Subtask</option>
+              <option>Bug</option>
+              <option>Note</option>
+            </select>
+            <span class="filter-divider"></span>
             <span class="filter-label">Created</span>
             <input type="date" class="form-control form-control-sm date-input" id="inputDateFrom" title="From date" />
             <span class="text-muted small">to</span>
@@ -522,6 +531,7 @@ const firebaseConfig = {
         addedBy: new Set(),
         statuses: new Set(),
         platforms: new Set(),
+        issueType: "",
         dateFrom: null,
         dateTo: null
       };
@@ -536,6 +546,7 @@ const firebaseConfig = {
           if (filters.addedBy.size && !filters.addedBy.has(t.addedBy || "Owies")) return false;
           if (filters.statuses.size && !filters.statuses.has(t.status)) return false;
           if (filters.platforms.size && !filters.platforms.has(t.platform || "Web")) return false;
+          if (filters.issueType && (t.issueType || "User Story") !== filters.issueType) return false;
           if (filters.dateFrom || filters.dateTo) {
             const d = t.createdAt && typeof t.createdAt.toDate === "function" ? t.createdAt.toDate() : null;
             if (!d) return false;
@@ -596,17 +607,23 @@ const firebaseConfig = {
           filters.dateTo = e.target.value || null;
           renderBoard(applyFilters());
         });
+        document.getElementById("inputIssueTypeFilter").addEventListener("change", (e) => {
+          filters.issueType = e.target.value;
+          renderBoard(applyFilters());
+        });
 
         document.getElementById("btnClearFilters").addEventListener("click", () => {
           filters.search = "";
           filters.addedBy.clear();
           filters.statuses.clear();
           filters.platforms.clear();
+          filters.issueType = "";
           filters.dateFrom = null;
           filters.dateTo = null;
           document.getElementById("inputSearch").value = "";
           document.getElementById("inputDateFrom").value = "";
           document.getElementById("inputDateTo").value = "";
+          document.getElementById("inputIssueTypeFilter").value = "";
           document.querySelectorAll(".chip").forEach((c) => c.classList.remove("active"));
           renderBoard(tickets);
         });
@@ -615,6 +632,8 @@ const firebaseConfig = {
       function toggleParentStoryField() {
         const isSubtask = document.getElementById("inputIssueType").value === "Subtask";
         document.getElementById("parentStoryField").classList.toggle("d-none", !isSubtask);
+        const isNote = document.getElementById("inputIssueType").value === "Note";
+        document.getElementById("inputStatus").disabled = isNote;
       }
 
       function setupParentStorySelect() {
@@ -829,6 +848,10 @@ const firebaseConfig = {
             updatedAt: firebase.firestore.FieldValue.serverTimestamp()
           }).then(() => showToast("Status updated"));
         });
+        if (isNote) {
+          div.querySelector(".status-select").disabled = true;
+          div.querySelector(".status-select").title = "Status locked for notes";
+        }
         div.querySelector(".btn-edit").addEventListener("click", () => openTicketModal(ticket));
         div.querySelector(".btn-del").addEventListener("click", () => {
           pendingDeleteId = ticket.id;
