@@ -181,6 +181,44 @@
       border-color: #6366f1;
       box-shadow: 0 0 0 0.2rem rgba(99, 102, 241, 0.15);
     }
+
+    .filter-card {
+      background: #fff;
+      border: 1px solid #e8eaf2;
+      border-radius: 14px;
+      box-shadow: 0 1px 3px rgba(16, 24, 40, 0.05);
+    }
+    .filter-label {
+      font-size: 0.72rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      color: var(--muted);
+    }
+    .filter-divider {
+      width: 1px;
+      height: 24px;
+      background: #e2e5ee;
+    }
+    .chip {
+      border: 1px solid #e2e5ee;
+      background: #fff;
+      color: #4b5563;
+      font-size: 0.8rem;
+      font-weight: 600;
+      padding: 0.3rem 0.85rem;
+      border-radius: 999px;
+      cursor: pointer;
+      transition: background 0.15s ease, border-color 0.15s ease, color 0.15s ease;
+    }
+    .chip:hover { border-color: #c7cbe0; background: #f3f4f8; }
+    .chip.active { background: #4f46e5; border-color: #4f46e5; color: #fff; }
+    .chip.active[data-status="To Do"] { background: var(--todo); border-color: var(--todo); }
+    .chip.active[data-status="In Progress"] { background: var(--inprogress); border-color: var(--inprogress); }
+    .chip.active[data-status="Done"] { background: var(--done); border-color: var(--done); }
+    .date-input { width: 150px; }
+    .btn-clear-filters { font-size: 0.8rem; font-weight: 600; color: #6b7280; }
+    .btn-clear-filters:hover { color: #dc2626; }
   </style>
 </head>
 <body>
@@ -198,6 +236,38 @@
   <div class="container-fluid px-4">
     <div id="configWarning" class="alert alert-warning d-none" role="alert">
       Firebase is not configured yet. Replace the placeholder values in <code>firebaseConfig</code> at the bottom of this file with your own project credentials.
+    </div>
+
+    <div class="card filter-card p-3 mb-3">
+      <div class="row g-3 align-items-center">
+        <div class="col-12 col-lg-4">
+          <input type="text" class="form-control" id="inputSearch" placeholder="Search by ticket ID, title, or text..." />
+        </div>
+        <div class="col-12 col-lg-8">
+          <div class="d-flex flex-wrap gap-2 align-items-center">
+            <span class="filter-label">Added by</span>
+            <button type="button" class="chip" data-addedby="Owies">Owies</button>
+            <button type="button" class="chip" data-addedby="Ashraf">Ashraf</button>
+            <span class="filter-divider"></span>
+            <span class="filter-label">Status</span>
+            <button type="button" class="chip" data-status="To Do">To Do</button>
+            <button type="button" class="chip" data-status="In Progress">In Progress</button>
+            <button type="button" class="chip" data-status="Done">Done</button>
+            <span class="filter-divider"></span>
+            <span class="filter-label">Platform</span>
+            <button type="button" class="chip" data-platform="Android">Android</button>
+            <button type="button" class="chip" data-platform="iOS">iOS</button>
+            <button type="button" class="chip" data-platform="Backend">Backend</button>
+            <button type="button" class="chip" data-platform="Web">Web</button>
+            <span class="filter-divider"></span>
+            <span class="filter-label">Created</span>
+            <input type="date" class="form-control form-control-sm date-input" id="inputDateFrom" title="From date" />
+            <span class="text-muted small">to</span>
+            <input type="date" class="form-control form-control-sm date-input" id="inputDateTo" title="To date" />
+            <button type="button" class="btn btn-link btn-sm btn-clear-filters" id="btnClearFilters">Clear all</button>
+          </div>
+        </div>
+      </div>
     </div>
 
     <div class="row g-3" id="board">
@@ -258,8 +328,25 @@
             <textarea class="form-control" id="inputText" rows="4" placeholder="Detailed description"></textarea>
           </div>
           <div class="mb-3">
+            <label class="form-label fw-semibold">Platform</label>
+            <select class="form-select" id="inputPlatform">
+              <option>Android</option>
+              <option>iOS</option>
+              <option>Backend</option>
+              <option>Web</option>
+            </select>
+          </div>
+          <div class="mb-3">
             <label class="form-label fw-semibold">Added by</label>
             <select class="form-select" id="inputAddedBy">
+              <option>Owies</option>
+              <option>Ashraf</option>
+            </select>
+          </div>
+          <div class="mb-3">
+            <label class="form-label fw-semibold">Assignee</label>
+            <select class="form-select" id="inputAssignee">
+              <option value="">Unassigned</option>
               <option>Owies</option>
               <option>Ashraf</option>
             </select>
@@ -339,6 +426,101 @@ const firebaseConfig = {
       let isDragging = false;
       let draggedId = null;
 
+      const filters = {
+        search: "",
+        addedBy: new Set(),
+        statuses: new Set(),
+        platforms: new Set(),
+        dateFrom: null,
+        dateTo: null
+      };
+
+      function applyFilters() {
+        const q = filters.search.toLowerCase();
+        return tickets.filter((t) => {
+          if (q) {
+            const hay = ((t.ticketId || "") + " " + (t.title || "") + " " + (t.text || "")).toLowerCase();
+            if (!hay.includes(q)) return false;
+          }
+          if (filters.addedBy.size && !filters.addedBy.has(t.addedBy || "Owies")) return false;
+          if (filters.statuses.size && !filters.statuses.has(t.status)) return false;
+          if (filters.platforms.size && !filters.platforms.has(t.platform || "Web")) return false;
+          if (filters.dateFrom || filters.dateTo) {
+            const d = t.createdAt && typeof t.createdAt.toDate === "function" ? t.createdAt.toDate() : null;
+            if (!d) return false;
+            if (filters.dateFrom) {
+              const p = filters.dateFrom.split("-");
+              if (d < new Date(+p[0], +p[1] - 1, +p[2])) return false;
+            }
+            if (filters.dateTo) {
+              const p = filters.dateTo.split("-");
+              if (d > new Date(+p[0], +p[1] - 1, +p[2], 23, 59, 59, 999)) return false;
+            }
+          }
+          return true;
+        });
+      }
+
+      function setupFilters() {
+        document.getElementById("inputSearch").addEventListener("input", (e) => {
+          filters.search = e.target.value.trim();
+          renderBoard(applyFilters());
+        });
+
+        document.querySelectorAll(".chip[data-status]").forEach((btn) => {
+          btn.addEventListener("click", () => {
+            const s = btn.dataset.status;
+            if (filters.statuses.has(s)) filters.statuses.delete(s);
+            else filters.statuses.add(s);
+            btn.classList.toggle("active", filters.statuses.has(s));
+            renderBoard(applyFilters());
+          });
+        });
+
+        document.querySelectorAll(".chip[data-addedby]").forEach((btn) => {
+          btn.addEventListener("click", () => {
+            const a = btn.dataset.addedby;
+            if (filters.addedBy.has(a)) filters.addedBy.delete(a);
+            else filters.addedBy.add(a);
+            btn.classList.toggle("active", filters.addedBy.has(a));
+            renderBoard(applyFilters());
+          });
+        });
+
+        document.querySelectorAll(".chip[data-platform]").forEach((btn) => {
+          btn.addEventListener("click", () => {
+            const p = btn.dataset.platform;
+            if (filters.platforms.has(p)) filters.platforms.delete(p);
+            else filters.platforms.add(p);
+            btn.classList.toggle("active", filters.platforms.has(p));
+            renderBoard(applyFilters());
+          });
+        });
+
+        document.getElementById("inputDateFrom").addEventListener("change", (e) => {
+          filters.dateFrom = e.target.value || null;
+          renderBoard(applyFilters());
+        });
+        document.getElementById("inputDateTo").addEventListener("change", (e) => {
+          filters.dateTo = e.target.value || null;
+          renderBoard(applyFilters());
+        });
+
+        document.getElementById("btnClearFilters").addEventListener("click", () => {
+          filters.search = "";
+          filters.addedBy.clear();
+          filters.statuses.clear();
+          filters.platforms.clear();
+          filters.dateFrom = null;
+          filters.dateTo = null;
+          document.getElementById("inputSearch").value = "";
+          document.getElementById("inputDateFrom").value = "";
+          document.getElementById("inputDateTo").value = "";
+          document.querySelectorAll(".chip").forEach((c) => c.classList.remove("active"));
+          renderBoard(tickets);
+        });
+      }
+
       function showToast(message) {
         document.getElementById("toastBody").textContent = message;
         bootstrap.Toast.getOrCreateInstance(document.getElementById("toast")).show();
@@ -369,7 +551,7 @@ const firebaseConfig = {
       function endDrag() {
         isDragging = false;
         draggedId = null;
-        renderBoard(tickets);
+        renderBoard(applyFilters());
       }
 
       function handleDrop(status) {
@@ -405,6 +587,8 @@ const firebaseConfig = {
             <p class="ticket-text mb-2">${escapeHtml(ticket.text || "")}</p>
             <div class="d-flex flex-wrap gap-1 mb-2">
               <span class="meta-badge">${escapeHtml(ticket.addedBy || "Owies")}</span>
+              <span class="meta-badge">${escapeHtml(ticket.platform || "Web")}</span>
+              <span class="meta-badge">&#128101; ${escapeHtml(ticket.assignee || "Unassigned")}</span>
               <span class="meta-badge">Created: ${formatDate(ticket.createdAt)}</span>
               <span class="meta-badge">Updated: ${formatDate(ticket.updatedAt)}</span>
             </div>
@@ -481,6 +665,7 @@ const firebaseConfig = {
         });
       }
       setupDropZones();
+      setupFilters();
 
       function openTicketModal(ticket) {
         document.getElementById("ticketModalTitle").textContent = ticket ? "Edit Ticket" : "New Ticket";
@@ -490,6 +675,8 @@ const firebaseConfig = {
         document.getElementById("inputText").value = ticket ? ticket.text || "" : "";
         document.getElementById("inputStatus").value = ticket ? ticket.status : "To Do";
         document.getElementById("inputAddedBy").value = ticket ? ticket.addedBy || "Owies" : "Owies";
+        document.getElementById("inputPlatform").value = ticket ? ticket.platform || "Web" : "Android";
+        document.getElementById("inputAssignee").value = ticket ? ticket.assignee || "" : "";
         ticketModal.show();
       }
 
@@ -504,6 +691,8 @@ const firebaseConfig = {
         const text = document.getElementById("inputText").value.trim();
         const status = document.getElementById("inputStatus").value;
         const addedBy = document.getElementById("inputAddedBy").value;
+        const platform = document.getElementById("inputPlatform").value;
+        const assignee = document.getElementById("inputAssignee").value;
         saveBtn.disabled = true;
         saveSpinner.classList.remove("d-none");
         try {
@@ -512,6 +701,8 @@ const firebaseConfig = {
               title,
               text,
               addedBy,
+              platform,
+              assignee,
               updatedAt: firebase.firestore.FieldValue.serverTimestamp()
             });
             showToast("Ticket updated");
@@ -522,6 +713,8 @@ const firebaseConfig = {
               title,
               text,
               addedBy,
+              platform,
+              assignee,
               status,
               createdAt: firebase.firestore.FieldValue.serverTimestamp(),
               updatedAt: firebase.firestore.FieldValue.serverTimestamp()
@@ -552,7 +745,7 @@ const firebaseConfig = {
       ticketsRef.onSnapshot((snapshot) => {
         tickets = [];
         snapshot.forEach((doc) => tickets.push({ id: doc.id, ...doc.data() }));
-        if (!isDragging) renderBoard(tickets);
+        if (!isDragging) renderBoard(applyFilters());
       }, (err) => showToast("Listener error: " + err.message));
     }
   </script>
