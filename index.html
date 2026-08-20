@@ -8,6 +8,7 @@
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet" />
   <style>
     :root {
+      --assets: #8b5cf6;
       --todo: #3b82f6;
       --inprogress: #f59e0b;
       --done: #10b981;
@@ -73,6 +74,7 @@
       border-radius: 50%;
       display: inline-block;
     }
+    .dot-assets { background: var(--assets); }
     .dot-todo { background: var(--todo); }
     .dot-inprogress { background: var(--inprogress); }
     .dot-done { background: var(--done); }
@@ -324,7 +326,19 @@
     </div>
 
     <div class="row g-3" id="board">
-      <div class="col-12 col-md-4">
+      <div class="col-12 col-md-3">
+        <div class="kanban-col" data-status="Assets">
+          <div class="col-header">
+            <div class="d-flex align-items-center gap-2">
+              <span class="status-dot dot-assets"></span>
+              <span class="col-title">Assets</span>
+            </div>
+            <span class="count-pill" id="count-assets">0</span>
+          </div>
+          <div id="column-assets"></div>
+        </div>
+      </div>
+      <div class="col-12 col-md-3">
         <div class="kanban-col" data-status="To Do">
           <div class="col-header">
             <div class="d-flex align-items-center gap-2">
@@ -336,7 +350,7 @@
           <div id="column-todo"></div>
         </div>
       </div>
-      <div class="col-12 col-md-4">
+      <div class="col-12 col-md-3">
         <div class="kanban-col" data-status="In Progress">
           <div class="col-header">
             <div class="d-flex align-items-center gap-2">
@@ -348,7 +362,7 @@
           <div id="column-inprogress"></div>
         </div>
       </div>
-      <div class="col-12 col-md-4">
+      <div class="col-12 col-md-3">
         <div class="kanban-col" data-status="Done">
           <div class="col-header">
             <div class="d-flex align-items-center gap-2">
@@ -424,11 +438,12 @@
             </div>
             <div class="col-md-6">
               <label class="form-label fw-semibold">Status</label>
-              <select class="form-select" id="inputStatus">
-                <option>To Do</option>
-                <option>In Progress</option>
-                <option>Done</option>
-              </select>
+<select class="form-select" id="inputStatus">
+              <option>To Do</option>
+              <option>In Progress</option>
+              <option>Done</option>
+              <option>Assets</option>
+            </select>
             </div>
           </div>
         </div>
@@ -506,8 +521,8 @@ const firebaseConfig = {
   messagingSenderId: "268156045194",
   appId: "1:268156045194:web:e0824fa50f170b3cfcaa73"
 };
-    const STATUSES = ["To Do", "In Progress", "Done"];
-    const ACCENTS = { "To Do": "#3b82f6", "In Progress": "#f59e0b", "Done": "#10b981" };
+    const STATUSES = ["Assets", "To Do", "In Progress", "Done"];
+    const ACCENTS = { "Assets": "#8b5cf6", "To Do": "#3b82f6", "In Progress": "#f59e0b", "Done": "#10b981" };
     const isConfigured = !firebaseConfig.apiKey.startsWith("YOUR_");
 
     if (!isConfigured) {
@@ -629,11 +644,22 @@ const firebaseConfig = {
         });
       }
 
+      function updateStatusOptions() {
+        const isNote = document.getElementById("inputIssueType").value === "Note";
+        const statusSelect = document.getElementById("inputStatus");
+        if (isNote) {
+          statusSelect.innerHTML = `<option selected>Assets</option>`;
+          statusSelect.disabled = true;
+        } else {
+          statusSelect.innerHTML = STATUSES.filter(s => s !== "Assets").map(s => `<option ${s === statusSelect.value ? "selected" : ""}>${s}</option>`).join("");
+          statusSelect.disabled = false;
+        }
+      }
+
       function toggleParentStoryField() {
         const isSubtask = document.getElementById("inputIssueType").value === "Subtask";
         document.getElementById("parentStoryField").classList.toggle("d-none", !isSubtask);
-        const isNote = document.getElementById("inputIssueType").value === "Note";
-        document.getElementById("inputStatus").disabled = isNote;
+        updateStatusOptions();
       }
 
       function setupParentStorySelect() {
@@ -723,6 +749,7 @@ const firebaseConfig = {
       function handleDrop(status) {
         if (!draggedId) return;
         const t = tickets.find((x) => x.id === draggedId);
+        if (status === "Assets") return;
         if (t && t.status !== status) {
           t.status = status;
           t.updatedAt = firebase.firestore.Timestamp.now();
@@ -824,7 +851,7 @@ const firebaseConfig = {
             <div class="d-flex justify-content-between align-items-center">
               ${isNote ? "" : `<span class="drag-hint">&#9776; drag</span>`}
               <select class="form-select form-select-sm status-select w-auto">
-                ${STATUSES.map((s) => `<option ${s === ticket.status ? "selected" : ""}>${s}</option>`).join("")}
+                ${isNote ? `<option selected>Assets</option>` : STATUSES.filter(s => s !== "Assets").map((s) => `<option ${s === ticket.status ? "selected" : ""}>${s}</option>`).join("")}
               </select>
             </div>
           </div>`;
@@ -843,6 +870,11 @@ const firebaseConfig = {
         });
 
         div.querySelector(".status-select").addEventListener("change", (e) => {
+          if (e.target.value === "Assets" && !isNote) {
+            showToast("Only notes can be in Assets");
+            e.target.value = ticket.status;
+            return;
+          }
           ticketsRef.doc(ticket.id).update({
             status: e.target.value,
             updatedAt: firebase.firestore.FieldValue.serverTimestamp()
@@ -851,6 +883,7 @@ const firebaseConfig = {
         if (isNote) {
           div.querySelector(".status-select").disabled = true;
           div.querySelector(".status-select").title = "Status locked for notes";
+          div.querySelector(".status-select").innerHTML = `<option selected>Assets</option>`;
         }
         div.querySelector(".btn-edit").addEventListener("click", () => openTicketModal(ticket));
         div.querySelector(".btn-del").addEventListener("click", () => {
@@ -939,6 +972,14 @@ const firebaseConfig = {
         const assignee = document.getElementById("inputAssignee").value;
         const issueType = document.getElementById("inputIssueType").value;
         const parentStoryId = document.getElementById("inputParentStoryId").value;
+        if (issueType !== "Note" && status === "Assets") {
+          showToast("Only Notes can be placed in Assets");
+          return;
+        }
+        if (issueType === "Note" && status !== "Assets") {
+          showToast("Notes must be placed in Assets");
+          return;
+        }
         if (issueType === "Subtask" && !parentStoryId) {
           showToast("Please link a user story for this subtask");
           document.getElementById("inputParentStorySearch").focus();
