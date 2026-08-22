@@ -44,19 +44,22 @@
       background: #fff;
       color: #4f46e5;
       border: none;
+      transition: transform 0.2s cubic-bezier(0.34, 1.56, 0.64, 1), background 0.2s ease, box-shadow 0.2s ease;
     }
-    .btn-new:hover { background: #eef2ff; color: #4338ca; }
+    .btn-new:hover { background: #eef2ff; color: #4338ca; transform: scale(1.05); box-shadow: 0 4px 12px rgba(255,255,255,0.25); }
+    .btn-new:active { transform: scale(0.95); }
 
     .kanban-col {
       background: #eef0f6;
       border-radius: 16px;
       min-height: 62vh;
       padding: 1rem;
-      transition: background 0.2s ease, box-shadow 0.2s ease;
+      transition: background 0.25s ease, box-shadow 0.25s ease, transform 0.2s ease;
     }
     .kanban-col.drag-over {
       background: #e2e8fb;
       box-shadow: inset 0 0 0 2px #6366f1;
+      transform: scale(1.01);
     }
     .col-header {
       display: flex;
@@ -86,7 +89,9 @@
       font-size: 0.8rem;
       font-weight: 600;
       color: var(--muted);
+      transition: transform 0.2s cubic-bezier(0.34, 1.56, 0.64, 1);
     }
+    .count-pill:hover { transform: scale(1.1); }
 
     .ticket-card {
       --accent: #94a3b8;
@@ -96,19 +101,31 @@
       border-radius: 12px;
       box-shadow: 0 1px 3px rgba(16, 24, 40, 0.06);
       cursor: grab;
-      transition: transform 0.15s ease, box-shadow 0.15s ease, opacity 0.15s ease;
-      animation: fadeInUp 0.25s ease;
+      transition: transform 0.2s cubic-bezier(0.34, 1.56, 0.64, 1), box-shadow 0.2s ease, opacity 0.15s ease;
+      animation: fadeInUp 0.35s cubic-bezier(0.34, 1.56, 0.64, 1);
     }
     .ticket-card:hover {
-      transform: translateY(-2px);
-      box-shadow: 0 10px 20px rgba(16, 24, 40, 0.1);
+      transform: translateY(-4px) scale(1.01);
+      box-shadow: 0 12px 24px rgba(16, 24, 40, 0.12);
     }
-    .ticket-card:active { cursor: grabbing; }
-    .ticket-card.dragging { opacity: 0.45; transform: scale(0.98); }
+    .ticket-card:active { cursor: grabbing; transform: scale(0.98); }
+    .ticket-card.dragging { opacity: 0.45; transform: scale(0.96); }
 
     @keyframes fadeInUp {
-      from { opacity: 0; transform: translateY(6px); }
+      from { opacity: 0; transform: translateY(12px) scale(0.97); }
       to { opacity: 1; transform: none; }
+    }
+    @keyframes fadeIn {
+      from { opacity: 0; }
+      to { opacity: 1; }
+    }
+    @keyframes slideDown {
+      from { opacity: 0; transform: translateY(-10px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+    @keyframes pulse {
+      0%, 100% { transform: scale(1); }
+      50% { transform: scale(1.05); }
     }
 
     .ticket-id {
@@ -147,8 +164,10 @@
       border: 1px solid #e8eaf2;
       color: #6b7280;
       background: #fff;
+      transition: transform 0.15s cubic-bezier(0.34, 1.56, 0.64, 1), background 0.15s ease, color 0.15s ease;
     }
-    .card-actions .btn:hover { background: #f3f4f8; color: #1f2430; }
+    .card-actions .btn:hover { background: #f3f4f8; color: #1f2430; transform: scale(1.1); }
+    .card-actions .btn:active { transform: scale(0.9); }
     .card-actions .btn-del:hover { background: #fef2f2; color: #dc2626; border-color: #fecaca; }
     .status-select {
       font-size: 0.78rem;
@@ -170,7 +189,7 @@
       padding: 1.75rem 0.5rem;
     }
 
-    .modal-content { border-radius: 16px; border: none; box-shadow: 0 20px 40px rgba(16, 24, 40, 0.15); }
+    .modal-content { border-radius: 16px; border: none; box-shadow: 0 20px 40px rgba(16, 24, 40, 0.15); animation: fadeIn 0.25s ease; }
     .modal-header { border-bottom: 1px solid #f0f1f5; }
     .modal-title { font-weight: 700; }
     .btn-primary-custom {
@@ -192,6 +211,7 @@
       border: 1px solid #e8eaf2;
       border-radius: 14px;
       box-shadow: 0 1px 3px rgba(16, 24, 40, 0.05);
+      animation: slideDown 0.3s ease;
     }
     .filter-label {
       font-size: 0.72rem;
@@ -214,10 +234,11 @@
       padding: 0.3rem 0.85rem;
       border-radius: 999px;
       cursor: pointer;
-      transition: background 0.15s ease, border-color 0.15s ease, color 0.15s ease;
+      transition: background 0.2s ease, border-color 0.2s ease, color 0.2s ease, transform 0.15s cubic-bezier(0.34, 1.56, 0.64, 1), box-shadow 0.2s ease;
     }
-    .chip:hover { border-color: #c7cbe0; background: #f3f4f8; }
-    .chip.active { background: #4f46e5; border-color: #4f46e5; color: #fff; }
+    .chip:hover { border-color: #c7cbe0; background: #f3f4f8; transform: scale(1.05); }
+    .chip:active { transform: scale(0.95); }
+    .chip.active { background: #4f46e5; border-color: #4f46e5; color: #fff; box-shadow: 0 2px 8px rgba(79, 70, 229, 0.3); }
     .chip.active[data-status="To Do"] { background: var(--todo); border-color: var(--todo); }
     .chip.active[data-status="In Progress"] { background: var(--inprogress); border-color: var(--inprogress); }
     .chip.active[data-status="Done"] { background: var(--done); border-color: var(--done); }
@@ -263,9 +284,9 @@
       border-radius: 10px;
       margin-bottom: 0.5rem;
       cursor: pointer;
-      transition: background 0.15s ease, border-color 0.15s ease;
+      transition: background 0.2s ease, border-color 0.2s ease, transform 0.15s cubic-bezier(0.34, 1.56, 0.64, 1);
     }
-    .subtask-row:hover { background: #eef2ff; border-color: #c7d2fe; }
+    .subtask-row:hover { background: #eef2ff; border-color: #c7d2fe; transform: translateX(4px); }
     .subtask-title { flex: 1; font-weight: 600; font-size: 0.9rem; }
     .subtask-badge { font-size: 0.72rem; font-weight: 600; color: #fff; padding: 0.2rem 0.55rem; border-radius: 999px; }
   </style>
@@ -291,43 +312,43 @@
     </div>
 
     <div class="card filter-card p-3 mb-3">
-      <div class="row g-3 align-items-center">
+      <div class="row g-2 align-items-center mb-2">
         <div class="col-12 col-lg-4">
           <input type="text" class="form-control" id="inputSearch" placeholder="Search by ticket ID, title, or text..." />
         </div>
-        <div class="col-12 col-lg-8">
-          <div class="d-flex flex-wrap gap-2 align-items-center">
-            <span class="filter-label">Added by</span>
-            <button type="button" class="chip" data-addedby="Owies">Owies</button>
-            <button type="button" class="chip" data-addedby="Ashraf">Ashraf</button>
-            <span class="filter-divider"></span>
-            <span class="filter-label">Status</span>
-            <button type="button" class="chip" data-status="To Do">To Do</button>
-            <button type="button" class="chip" data-status="In Progress">In Progress</button>
-            <button type="button" class="chip" data-status="Done">Done</button>
-            <span class="filter-divider"></span>
-            <span class="filter-label">Platform</span>
-            <button type="button" class="chip" data-platform="Android">Android</button>
-            <button type="button" class="chip" data-platform="iOS">iOS</button>
-            <button type="button" class="chip" data-platform="Backend">Backend</button>
-            <button type="button" class="chip" data-platform="Web">Web</button>
-            <span class="filter-divider"></span>
-            <span class="filter-label">Issue Type</span>
-            <select class="form-select form-select-sm w-auto" id="inputIssueTypeFilter">
-              <option value="">All types</option>
-              <option>User Story</option>
-              <option>Subtask</option>
-              <option>Bug</option>
-              <option>Note</option>
-            </select>
-            <span class="filter-divider"></span>
-            <span class="filter-label">Created</span>
-            <input type="date" class="form-control form-control-sm date-input" id="inputDateFrom" title="From date" />
-            <span class="text-muted small">to</span>
-            <input type="date" class="form-control form-control-sm date-input" id="inputDateTo" title="To date" />
-            <button type="button" class="btn btn-link btn-sm btn-clear-filters" id="btnClearFilters">Clear all</button>
-          </div>
+        <div class="col-12 col-lg-8 d-flex justify-content-end">
+          <button type="button" class="btn btn-link btn-sm btn-clear-filters" id="btnClearFilters">Clear all</button>
         </div>
+      </div>
+      <div class="d-flex flex-wrap gap-2 align-items-center">
+        <span class="filter-label">Added by</span>
+        <button type="button" class="chip" data-addedby="Owies">&#128100; Owies</button>
+        <button type="button" class="chip" data-addedby="Ashraf">&#128100; Ashraf</button>
+        <span class="filter-divider"></span>
+        <span class="filter-label">Status</span>
+        <button type="button" class="chip" data-status="To Do">&#128203; To Do</button>
+        <button type="button" class="chip" data-status="In Progress">&#128260; In Progress</button>
+        <button type="button" class="chip" data-status="Done">&#9989; Done</button>
+        <span class="filter-divider"></span>
+        <span class="filter-label">Platform</span>
+        <button type="button" class="chip" data-platform="Android">&#128241; Android</button>
+        <button type="button" class="chip" data-platform="iOS">&#127822; iOS</button>
+        <button type="button" class="chip" data-platform="Backend">&#9881; Backend</button>
+        <button type="button" class="chip" data-platform="Web">&#127760; Web</button>
+        <span class="filter-divider"></span>
+        <span class="filter-label">Issue Type</span>
+        <select class="form-select form-select-sm w-auto" id="inputIssueTypeFilter">
+          <option value="">All types</option>
+          <option>User Story</option>
+          <option>Subtask</option>
+          <option>Bug</option>
+          <option>Note</option>
+        </select>
+        <span class="filter-divider"></span>
+        <span class="filter-label">Created</span>
+        <input type="date" class="form-control form-control-sm date-input" id="inputDateFrom" title="From date" />
+        <span class="text-muted small">to</span>
+        <input type="date" class="form-control form-control-sm date-input" id="inputDateTo" title="To date" />
       </div>
     </div>
 
