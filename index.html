@@ -336,6 +336,10 @@
         <button type="button" class="chip" data-platform="Backend">&#9881; Backend</button>
         <button type="button" class="chip" data-platform="Web">&#127760; Web</button>
         <span class="filter-divider"></span>
+        <span class="filter-label">Assignee</span>
+        <button type="button" class="chip" data-assignee="Owies">&#128100; Owies</button>
+        <button type="button" class="chip" data-assignee="Ashraf">&#128100; Ashraf</button>
+        <span class="filter-divider"></span>
         <span class="filter-label">Issue Type</span>
         <select class="form-select form-select-sm w-auto" id="inputIssueTypeFilter">
           <option value="">All types</option>
@@ -582,6 +586,7 @@ const firebaseConfig = {
         addedBy: new Set(),
         statuses: new Set(),
         platforms: new Set(),
+        assignees: new Set(),
         issueType: "",
         dateFrom: null,
         dateTo: null
@@ -597,6 +602,7 @@ const firebaseConfig = {
           if (filters.addedBy.size && !filters.addedBy.has(t.addedBy || "Owies")) return false;
           if (filters.statuses.size && !filters.statuses.has(t.status)) return false;
           if (filters.platforms.size && !filters.platforms.has(t.platform || "Web")) return false;
+          if (filters.assignees.size && !filters.assignees.has(t.assignee || "")) return false;
           if (filters.issueType && (t.issueType || "User Story") !== filters.issueType) return false;
           if (filters.dateFrom || filters.dateTo) {
             const d = t.createdAt && typeof t.createdAt.toDate === "function" ? t.createdAt.toDate() : null;
@@ -650,6 +656,16 @@ const firebaseConfig = {
           });
         });
 
+        document.querySelectorAll(".chip[data-assignee]").forEach((btn) => {
+          btn.addEventListener("click", () => {
+            const a = btn.dataset.assignee;
+            if (filters.assignees.has(a)) filters.assignees.delete(a);
+            else filters.assignees.add(a);
+            btn.classList.toggle("active", filters.assignees.has(a));
+            renderBoard(applyFilters());
+          });
+        });
+
         document.getElementById("inputDateFrom").addEventListener("change", (e) => {
           filters.dateFrom = e.target.value || null;
           renderBoard(applyFilters());
@@ -668,6 +684,7 @@ const firebaseConfig = {
           filters.addedBy.clear();
           filters.statuses.clear();
           filters.platforms.clear();
+          filters.assignees.clear();
           filters.issueType = "";
           filters.dateFrom = null;
           filters.dateTo = null;
