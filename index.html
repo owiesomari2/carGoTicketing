@@ -178,8 +178,9 @@
       border: none;
       border-radius: 10px;
       font-weight: 600;
+      color: #fff;
     }
-    .btn-primary-custom:hover { background: #4338ca; }
+    .btn-primary-custom:hover { background: #4338ca; color: #fff; }
     .form-control, .form-select { border-radius: 10px; border-color: #e2e5ee; }
     .form-control:focus, .form-select:focus {
       border-color: #6366f1;
@@ -277,7 +278,10 @@
         <span class="brand-dot"></span>
         carGo project
       </span>
-      <button class="btn btn-new" id="btnNewTicket">+ New Ticket</button>
+      <div class="d-flex align-items-center gap-3">
+        <span class="text-white" id="currentDateTime" style="font-size: 0.85rem; font-weight: 500;"></span>
+        <button class="btn btn-new" id="btnNewTicket">+ New Ticket</button>
+      </div>
     </div>
   </nav>
 
@@ -397,7 +401,7 @@
               <label class="form-label fw-semibold">Description</label>
               <textarea class="form-control" id="inputText" rows="4" placeholder="Detailed description"></textarea>
             </div>
-            <div class="col-md-6">
+            <div class="col-md-6" id="platformField">
               <label class="form-label fw-semibold">Platform</label>
               <select class="form-select" id="inputPlatform">
                 <option>Android</option>
@@ -515,6 +519,14 @@
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
 
   <script>
+function updateDateTime() {
+      const now = new Date();
+      const options = { weekday: "short", year: "numeric", month: "short", day: "numeric", hour: "2-digit", minute: "2-digit", second: "2-digit" };
+      document.getElementById("currentDateTime").textContent = now.toLocaleDateString("en-US", options);
+    }
+    updateDateTime();
+    setInterval(updateDateTime, 1000);
+
 const firebaseConfig = {
   apiKey: "AIzaSyBE6d5Oc9I5kYKJjAMGREaN2-qNMIy_SH0",
   authDomain: "simi-jira.firebaseapp.com",
@@ -523,6 +535,7 @@ const firebaseConfig = {
   messagingSenderId: "268156045194",
   appId: "1:268156045194:web:e0824fa50f170b3cfcaa73"
 };
+    const ISSUE_ICONS = { "User Story": "&#128100;", "Subtask": "&#128203;", "Bug": "&#128027;", "Note": "&#128204;" };
     const STATUSES = ["Assets", "To Do", "In Progress", "Done"];
     const ACCENTS = { "Assets": "#8b5cf6", "To Do": "#3b82f6", "In Progress": "#f59e0b", "Done": "#10b981" };
     const isConfigured = !firebaseConfig.apiKey.startsWith("YOUR_");
@@ -647,7 +660,8 @@ const firebaseConfig = {
       }
 
       function updateStatusOptions() {
-        const isNote = document.getElementById("inputIssueType").value === "Note";
+        const issueType = document.getElementById("inputIssueType").value;
+        const isNote = issueType === "Note";
         const statusSelect = document.getElementById("inputStatus");
         if (isNote) {
           statusSelect.innerHTML = `<option selected>Assets</option>`;
@@ -656,6 +670,8 @@ const firebaseConfig = {
           statusSelect.innerHTML = STATUSES.filter(s => s !== "Assets").map(s => `<option ${s === statusSelect.value ? "selected" : ""}>${s}</option>`).join("");
           statusSelect.disabled = false;
         }
+        const hidePlatform = issueType === "User Story" || issueType === "Note";
+        document.getElementById("platformField").classList.toggle("d-none", hidePlatform);
       }
 
       function toggleParentStoryField() {
@@ -804,7 +820,7 @@ const firebaseConfig = {
             ${detailsRow("Title", escapeHtml(ticket.title))}
             ${detailsRow("Status", escapeHtml(ticket.status))}
             ${detailsRow("Issue Type", escapeHtml(ticket.issueType || "User Story"))}
-            ${detailsRow("Platform", escapeHtml(ticket.platform || "Web"))}
+            ${ticket.issueType !== "User Story" && ticket.issueType !== "Note" ? detailsRow("Platform", escapeHtml(ticket.platform || "Web")) : ""}
             ${detailsRow("Added by", escapeHtml(ticket.addedBy || "Owies"))}
             ${detailsRow("Assignee", escapeHtml(ticket.assignee || "Unassigned"))}
             ${ticket.parentStoryId ? detailsRow("Linked User Story", escapeHtml(parent ? `${parent.ticketId || parent.id} — ${parent.title}` : "—")) : ""}
@@ -833,8 +849,9 @@ const firebaseConfig = {
         div.innerHTML = `
           <div class="card-body p-2">
             <div class="d-flex justify-content-between align-items-center mb-2">
-              <span class="ticket-id">${escapeHtml(ticket.ticketId || ticket.id)}</span>
+              <span class="ticket-id">${ISSUE_ICONS[ticket.issueType] || ""} ${escapeHtml(ticket.ticketId || ticket.id)}</span>
               <div class="card-actions">
+                ${ticket.issueType === "User Story" ? `<span class="meta-badge">${tickets.filter((t) => t.parentStoryId === ticket.id).length} subtasks</span>` : ""}
                 <button class="btn btn-edit" title="Edit">&#9998;</button>
                 <button class="btn btn-del" title="Delete">&#10005;</button>
               </div>
@@ -843,7 +860,7 @@ const firebaseConfig = {
             <p class="ticket-text mb-2">${escapeHtml(ticket.text || "")}</p>
             <div class="d-flex flex-wrap gap-1 mb-2">
               <span class="meta-badge">${escapeHtml(ticket.addedBy || "Owies")}</span>
-              <span class="meta-badge">${escapeHtml(ticket.platform || "Web")}</span>
+              ${ticket.issueType !== "User Story" && ticket.issueType !== "Note" ? `<span class="meta-badge">${escapeHtml(ticket.platform || "Web")}</span>` : ""}
               <span class="meta-badge">&#128101; ${escapeHtml(ticket.assignee || "Unassigned")}</span>
               <span class="meta-badge">${escapeHtml(ticket.issueType || "User Story")}</span>
               ${ticket.parentStoryId ? `<span class="meta-badge" title="Linked user story">&#8618; ${escapeHtml((tickets.find((x) => x.id === ticket.parentStoryId) || {}).ticketId || "")}</span>` : ""}
