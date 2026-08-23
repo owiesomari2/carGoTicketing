@@ -1020,8 +1020,14 @@ const firebaseConfig = {
             <h6 class="ticket-title mb-1">${escapeHtml(ticket.title)}</h6>
             <p class="ticket-text mb-2">${escapeHtml(ticket.text || "")}</p>
             <div class="d-flex flex-wrap gap-1 mb-2">
-              <span class="meta-badge">Created: ${formatDate(ticket.createdAt)}</span>
-              <span class="meta-badge">Updated: ${formatDate(ticket.updatedAt)}</span>
+              ${isNote
+                ? `<span class="meta-badge">Created: ${formatDate(ticket.createdAt)}</span><span class="meta-badge">Updated: ${formatDate(ticket.updatedAt)}</span>`
+                : `<span class="meta-badge">${escapeHtml(ticket.addedBy || "Owies")}</span>
+                   ${ticket.issueType !== "User Story" ? `<span class="meta-badge">${escapeHtml(ticket.platform || "Web")}</span>` : ""}
+                   <span class="meta-badge">&#128101; ${escapeHtml(ticket.assignee || "Unassigned")}</span>
+                   <span class="meta-badge">${escapeHtml(ticket.issueType || "User Story")}</span>
+                   ${ticket.parentStoryId ? `<span class="meta-badge" title="Linked user story">&#8618; ${escapeHtml((tickets.find((x) => x.id === ticket.parentStoryId) || {}).ticketId || "")}</span>` : ""}`
+              }
             </div>
             <div class="d-flex justify-content-between align-items-center">
               ${isNote ? "" : `<span class="drag-hint">&#9776; drag</span>`}
