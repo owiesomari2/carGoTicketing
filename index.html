@@ -1079,7 +1079,7 @@ const firebaseConfig = {
           const col = document.getElementById("column-" + status.toLowerCase().replace(" ", ""));
           const items = list
             .filter((t) => t.status === status)
-            .sort((a, b) => (b.createdAt ? b.createdAt.toMillis() : 0) - (a.createdAt ? a.createdAt.toMillis() : 0));
+            .sort((a, b) => (b.updatedAt ? b.updatedAt.toMillis() : 0) - (a.updatedAt ? a.updatedAt.toMillis() : 0));
           col.innerHTML = "";
           if (items.length === 0) {
             col.innerHTML = `<div class="empty-state">No tickets here yet</div>`;
