@@ -6,6 +6,7 @@
   <title>carGo project - Ticket Board</title>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet" />
+  <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
   <style>
     :root {
       --assets: #8b5cf6;
@@ -313,7 +314,8 @@
 
     <div class="card filter-card p-3 mb-3">
       <div class="row g-2 align-items-center mb-2">
-        <div class="col-12 col-lg-4">
+        <div class="col-12 col-lg-4 d-flex align-items-center gap-2">
+          <button type="button" class="btn btn-success btn-sm fw-semibold" id="btnExport" style="border-radius:8px; white-space:nowrap;">&#128229; EXPORT</button>
           <input type="text" class="form-control" id="inputSearch" placeholder="Search by ticket ID, title, or text..." />
         </div>
         <div class="col-12 col-lg-8 d-flex justify-content-end">
@@ -347,6 +349,18 @@
           <option>Subtask</option>
           <option>Bug</option>
           <option>Note</option>
+        </select>
+        <span class="filter-divider"></span>
+        <span class="filter-label">Phase</span>
+        <select class="form-select form-select-sm w-auto" id="inputPhaseFilter">
+          <option value="">All phases</option>
+          <option>Phase0</option>
+          <option>Phase1</option>
+          <option>Phase2</option>
+          <option>Phase3</option>
+          <option>Phase4</option>
+          <option>Phase5</option>
+          <option>Phase6</option>
         </select>
         <span class="filter-divider"></span>
         <span class="filter-label">Created</span>
@@ -451,6 +465,18 @@
                 <input type="text" class="form-control" id="inputParentStorySearch" placeholder="Search user story by ID or title..." autocomplete="off" />
                 <div class="searchable-dropdown" id="userStoryDropdown"></div>
               </div>
+            </div>
+            <div class="col-md-6 d-none" id="phaseField">
+              <label class="form-label fw-semibold">Phase</label>
+              <select class="form-select" id="inputPhase">
+                <option>Phase0</option>
+                <option>Phase1</option>
+                <option>Phase2</option>
+                <option>Phase3</option>
+                <option>Phase4</option>
+                <option>Phase5</option>
+                <option>Phase6</option>
+              </select>
             </div>
             <div class="col-md-6">
               <label class="form-label fw-semibold">Added by</label>
@@ -588,6 +614,7 @@ const firebaseConfig = {
         platforms: new Set(),
         assignees: new Set(),
         issueType: "",
+        phase: "",
         dateFrom: null,
         dateTo: null
       };
@@ -604,6 +631,7 @@ const firebaseConfig = {
           if (filters.platforms.size && !filters.platforms.has(t.platform || "Web")) return false;
           if (filters.assignees.size && !filters.assignees.has(t.assignee || "")) return false;
           if (filters.issueType && (t.issueType || "User Story") !== filters.issueType) return false;
+          if (filters.phase && (t.phase || "") !== filters.phase) return false;
           if (filters.dateFrom || filters.dateTo) {
             const d = t.createdAt && typeof t.createdAt.toDate === "function" ? t.createdAt.toDate() : null;
             if (!d) return false;
@@ -678,6 +706,10 @@ const firebaseConfig = {
           filters.issueType = e.target.value;
           renderBoard(applyFilters());
         });
+        document.getElementById("inputPhaseFilter").addEventListener("change", (e) => {
+          filters.phase = e.target.value;
+          renderBoard(applyFilters());
+        });
 
         document.getElementById("btnClearFilters").addEventListener("click", () => {
           filters.search = "";
@@ -686,16 +718,67 @@ const firebaseConfig = {
           filters.platforms.clear();
           filters.assignees.clear();
           filters.issueType = "";
+          filters.phase = "";
           filters.dateFrom = null;
           filters.dateTo = null;
           document.getElementById("inputSearch").value = "";
           document.getElementById("inputDateFrom").value = "";
           document.getElementById("inputDateTo").value = "";
           document.getElementById("inputIssueTypeFilter").value = "";
+          document.getElementById("inputPhaseFilter").value = "";
           document.querySelectorAll(".chip").forEach((c) => c.classList.remove("active"));
           renderBoard(tickets);
         });
       }
+
+      function isFiltersActive() {
+        return filters.search !== "" ||
+          filters.addedBy.size > 0 ||
+          filters.statuses.size > 0 ||
+          filters.platforms.size > 0 ||
+          filters.assignees.size > 0 ||
+          filters.issueType !== "" ||
+          filters.phase !== "" ||
+          filters.dateFrom !== null ||
+          filters.dateTo !== null;
+      }
+
+      function formatFirestoreDate(val) {
+        if (!val) return "";
+        if (typeof val.toDate === "function") return val.toDate().toLocaleDateString();
+        if (val.seconds) return new Date(val.seconds * 1000).toLocaleDateString();
+        return String(val);
+      }
+
+      function exportToExcel() {
+        const data = isFiltersActive() ? applyFilters() : tickets;
+        if (!data.length) { showToast("No data to export"); return; }
+        const rows = data.map(t => ({
+          "Ticket ID": t.ticketId || "",
+          "Title": t.title || "",
+          "Description": t.text || "",
+          "Status": t.status || "",
+          "Issue Type": t.issueType || "",
+          "Platform": t.platform || "",
+          "Assignee": t.assignee || "",
+          "Added By": t.addedBy || "",
+          "Phase": t.phase || "",
+          "Created At": formatFirestoreDate(t.createdAt),
+          "Updated At": formatFirestoreDate(t.updatedAt)
+        }));
+        const ws = XLSX.utils.json_to_sheet(rows);
+        ws["!cols"] = [
+          { wch: 12 }, { wch: 30 }, { wch: 50 }, { wch: 14 },
+          { wch: 14 }, { wch: 12 }, { wch: 14 }, { wch: 12 },
+          { wch: 10 }, { wch: 14 }, { wch: 14 }
+        ];
+        const wb = XLSX.utils.book_new();
+        XLSX.utils.book_append_sheet(wb, ws, "Tickets");
+        XLSX.writeFile(wb, "tickets_export.xlsx");
+        showToast("Exported " + data.length + " ticket(s)");
+      }
+
+      document.getElementById("btnExport").addEventListener("click", exportToExcel);
 
       function updateStatusOptions() {
         const issueType = document.getElementById("inputIssueType").value;
@@ -710,6 +793,8 @@ const firebaseConfig = {
         }
         const hidePlatform = issueType === "User Story" || issueType === "Note";
         document.getElementById("platformField").classList.toggle("d-none", hidePlatform);
+        const showPhase = issueType === "User Story";
+        document.getElementById("phaseField").classList.toggle("d-none", !showPhase);
       }
 
       function toggleParentStoryField() {
@@ -1006,6 +1091,7 @@ const firebaseConfig = {
         document.getElementById("inputPlatform").value = ticket ? ticket.platform || "Web" : "Android";
         document.getElementById("inputAssignee").value = ticket ? ticket.assignee || "" : "";
         document.getElementById("inputIssueType").value = ticket ? ticket.issueType || "User Story" : "User Story";
+        document.getElementById("inputPhase").value = ticket ? ticket.phase || "Phase0" : "Phase0";
         const parentId = ticket && ticket.parentStoryId ? ticket.parentStoryId : "";
         document.getElementById("inputParentStoryId").value = parentId;
         const parent = parentId ? tickets.find((x) => x.id === parentId) : null;
@@ -1029,6 +1115,7 @@ const firebaseConfig = {
         const assignee = document.getElementById("inputAssignee").value;
         const issueType = document.getElementById("inputIssueType").value;
         const parentStoryId = document.getElementById("inputParentStoryId").value;
+        const phase = document.getElementById("inputPhase").value;
         if (issueType !== "Note" && status === "Assets") {
           showToast("Only Notes can be placed in Assets");
           return;
@@ -1054,6 +1141,7 @@ const firebaseConfig = {
               assignee,
               issueType,
               parentStoryId: issueType === "Subtask" ? parentStoryId : "",
+              phase: issueType === "User Story" ? phase : "",
               updatedAt: firebase.firestore.FieldValue.serverTimestamp()
             });
             showToast("Ticket updated");
@@ -1068,6 +1156,7 @@ const firebaseConfig = {
               assignee,
               issueType,
               parentStoryId: issueType === "Subtask" ? parentStoryId : "",
+              phase: issueType === "User Story" ? phase : "",
               status,
               createdAt: firebase.firestore.FieldValue.serverTimestamp(),
               updatedAt: firebase.firestore.FieldValue.serverTimestamp()
