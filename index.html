@@ -112,6 +112,43 @@
     .ticket-card:active { cursor: grabbing; transform: scale(0.98); }
     .ticket-card.dragging { opacity: 0.45; transform: scale(0.96); }
 
+    .ticket-card.note-card {
+      --accent: transparent;
+      background: #fef9c3;
+      border: none;
+      border-left: none;
+      border-radius: 2px;
+      box-shadow: 2px 3px 8px rgba(0,0,0,0.15), inset 0 0 40px rgba(253,230,138,0.3);
+      transform: rotate(-1deg);
+      position: relative;
+      cursor: default;
+    }
+    .ticket-card.note-card::before {
+      content: "";
+      position: absolute;
+      top: 0; right: 0;
+      width: 0; height: 0;
+      border-style: solid;
+      border-width: 0 28px 28px 0;
+      border-color: transparent #fde68a transparent transparent;
+      filter: drop-shadow(-1px 1px 1px rgba(0,0,0,0.08));
+    }
+    .ticket-card.note-card::after {
+      content: "";
+      position: absolute;
+      top: 0; right: 0;
+      width: 28px; height: 28px;
+      background: linear-gradient(135deg, transparent 50%, rgba(0,0,0,0.04) 50%);
+    }
+    .ticket-card.note-card:hover {
+      transform: rotate(-1deg) translateY(-3px) scale(1.02);
+      box-shadow: 4px 6px 16px rgba(0,0,0,0.18), inset 0 0 40px rgba(253,230,138,0.3);
+    }
+    .ticket-card.note-card:active { cursor: default; transform: rotate(-1deg) scale(0.98); }
+    .ticket-card.note-card .card-body { padding: 1rem 0.75rem 0.75rem; }
+    .ticket-card.note-card .ticket-title { font-style: italic; }
+    .ticket-card.note-card .meta-badge { background: rgba(0,0,0,0.06); }
+
     @keyframes fadeInUp {
       from { opacity: 0; transform: translateY(12px) scale(0.97); }
       to { opacity: 1; transform: none; }
@@ -967,7 +1004,7 @@ const firebaseConfig = {
       function ticketCard(ticket) {
         const div = document.createElement("div");
         const isNote = ticket.issueType === "Note";
-        div.className = "card ticket-card mb-2";
+        div.className = isNote ? "card ticket-card note-card mb-2" : "card ticket-card mb-2";
         div.draggable = !isNote;
         div.style.setProperty("--accent", ACCENTS[ticket.status] || "#94a3b8");
         div.innerHTML = `
