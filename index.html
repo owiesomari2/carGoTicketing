@@ -485,7 +485,7 @@
                 <option>Ashraf</option>
               </select>
             </div>
-            <div class="col-md-6">
+            <div class="col-md-6" id="assigneeField">
               <label class="form-label fw-semibold">Assignee</label>
               <select class="form-select" id="inputAssignee">
                 <option value="">Unassigned</option>
@@ -793,6 +793,7 @@ const firebaseConfig = {
         }
         const hidePlatform = issueType === "User Story" || issueType === "Note";
         document.getElementById("platformField").classList.toggle("d-none", hidePlatform);
+        document.getElementById("assigneeField").classList.toggle("d-none", isNote);
         const showPhase = issueType === "User Story";
         document.getElementById("phaseField").classList.toggle("d-none", !showPhase);
       }
@@ -982,11 +983,6 @@ const firebaseConfig = {
             <h6 class="ticket-title mb-1">${escapeHtml(ticket.title)}</h6>
             <p class="ticket-text mb-2">${escapeHtml(ticket.text || "")}</p>
             <div class="d-flex flex-wrap gap-1 mb-2">
-              <span class="meta-badge">${escapeHtml(ticket.addedBy || "Owies")}</span>
-              ${ticket.issueType !== "User Story" && ticket.issueType !== "Note" ? `<span class="meta-badge">${escapeHtml(ticket.platform || "Web")}</span>` : ""}
-              <span class="meta-badge">&#128101; ${escapeHtml(ticket.assignee || "Unassigned")}</span>
-              <span class="meta-badge">${escapeHtml(ticket.issueType || "User Story")}</span>
-              ${ticket.parentStoryId ? `<span class="meta-badge" title="Linked user story">&#8618; ${escapeHtml((tickets.find((x) => x.id === ticket.parentStoryId) || {}).ticketId || "")}</span>` : ""}
               <span class="meta-badge">Created: ${formatDate(ticket.createdAt)}</span>
               <span class="meta-badge">Updated: ${formatDate(ticket.updatedAt)}</span>
             </div>
