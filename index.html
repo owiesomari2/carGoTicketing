@@ -149,6 +149,17 @@
     .ticket-card.note-card .ticket-title { font-style: italic; }
     .ticket-card.note-card .meta-badge { background: rgba(0,0,0,0.06); }
 
+    .btn-load-more {
+      background: #f1f5f9;
+      border: 1px dashed #cbd5e1;
+      border-radius: 8px;
+      color: #64748b;
+      font-weight: 600;
+      font-size: 0.78rem;
+      transition: background 0.2s, color 0.2s;
+    }
+    .btn-load-more:hover { background: #e2e8f0; color: #334155; }
+
     @keyframes fadeInUp {
       from { opacity: 0; transform: translateY(12px) scale(0.97); }
       to { opacity: 1; transform: none; }
@@ -1074,6 +1085,8 @@ const firebaseConfig = {
         return div;
       }
 
+      let columnVisible = {};
+
       function renderBoard(list) {
         STATUSES.forEach((status) => {
           const col = document.getElementById("column-" + status.toLowerCase().replace(" ", ""));
@@ -1084,7 +1097,19 @@ const firebaseConfig = {
           if (items.length === 0) {
             col.innerHTML = `<div class="empty-state">No tickets here yet</div>`;
           } else {
-            items.forEach((t) => col.appendChild(ticketCard(t)));
+            const visible = columnVisible[status] || 5;
+            const toShow = items.slice(0, visible);
+            toShow.forEach((t) => col.appendChild(ticketCard(t)));
+            if (items.length > visible) {
+              const btn = document.createElement("button");
+              btn.className = "btn btn-load-more btn-sm w-100 mt-2";
+              btn.textContent = `Load More (${visible} of ${items.length})`;
+              btn.addEventListener("click", () => {
+                columnVisible[status] = visible + 5;
+                renderBoard(list);
+              });
+              col.appendChild(btn);
+            }
           }
           document.getElementById("count-" + status.toLowerCase().replace(" ", "")).textContent = items.length;
         });
