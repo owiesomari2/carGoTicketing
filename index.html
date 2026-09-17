@@ -161,6 +161,20 @@
     }
     .btn-load-more:hover { background: #e2e8f0; color: #334155; }
 
+    .label-badge {
+      display: inline-block;
+      font-size: 0.65rem;
+      font-weight: 700;
+      padding: 0.15rem 0.45rem;
+      border-radius: 4px;
+      background: #e0e7ff;
+      color: #4338ca;
+      letter-spacing: 0.2px;
+    }
+    .label-badge:nth-child(2) { background: #dcfce7; color: #15803d; }
+    .label-badge:nth-child(3) { background: #fef3c7; color: #b45309; }
+    .label-badge:nth-child(4) { background: #fce7f3; color: #be185d; }
+
     @keyframes fadeInUp {
       from { opacity: 0; transform: translateY(12px) scale(0.97); }
       to { opacity: 1; transform: none; }
@@ -551,6 +565,27 @@
               <option>Assets</option>
             </select>
             </div>
+            <div class="col-12" id="labelsField">
+              <label class="form-label fw-semibold">Labels</label>
+              <div class="d-flex flex-wrap gap-3">
+                <div class="form-check">
+                  <input class="form-check-input" type="checkbox" value="Done Android" id="labelDoneAndroid">
+                  <label class="form-check-label" for="labelDoneAndroid">Done Android</label>
+                </div>
+                <div class="form-check">
+                  <input class="form-check-input" type="checkbox" value="Done iOS" id="labelDoneIOS">
+                  <label class="form-check-label" for="labelDoneIOS">Done iOS</label>
+                </div>
+                <div class="form-check">
+                  <input class="form-check-input" type="checkbox" value="Done Backend" id="labelDoneBackend">
+                  <label class="form-check-label" for="labelDoneBackend">Done Backend</label>
+                </div>
+                <div class="form-check">
+                  <input class="form-check-input" type="checkbox" value="Done Web" id="labelDoneWeb">
+                  <label class="form-check-label" for="labelDoneWeb">Done Web</label>
+                </div>
+              </div>
+            </div>
           </div>
         </div>
         <div class="modal-footer">
@@ -812,6 +847,7 @@ const firebaseConfig = {
           "Assignee": t.assignee || "",
           "Added By": t.addedBy || "",
           "Phase": t.phase || "",
+          "Labels": (t.labels || []).join(", "),
           "Created At": formatFirestoreDate(t.createdAt),
           "Updated At": formatFirestoreDate(t.updatedAt)
         }));
@@ -819,7 +855,7 @@ const firebaseConfig = {
         ws["!cols"] = [
           { wch: 12 }, { wch: 30 }, { wch: 50 }, { wch: 14 },
           { wch: 14 }, { wch: 12 }, { wch: 14 }, { wch: 12 },
-          { wch: 10 }, { wch: 14 }, { wch: 14 }
+          { wch: 10 }, { wch: 25 }, { wch: 14 }, { wch: 14 }
         ];
         const wb = XLSX.utils.book_new();
         XLSX.utils.book_append_sheet(wb, ws, "Tickets");
@@ -997,6 +1033,7 @@ const firebaseConfig = {
             ${detailsRow("Added by", escapeHtml(ticket.addedBy || "Owies"))}
             ${detailsRow("Assignee", escapeHtml(ticket.assignee || "Unassigned"))}
             ${ticket.parentStoryId ? detailsRow("Linked User Story", escapeHtml(parent ? `${parent.ticketId || parent.id} — ${parent.title}` : "—")) : ""}
+            ${ticket.labels && ticket.labels.length ? detailsRow("Labels", escapeHtml(ticket.labels.join(", "))) : ""}
             ${detailsRow("Created", formatDate(ticket.createdAt))}
             ${detailsRow("Updated", formatDate(ticket.updatedAt))}
             <div class="col-12 mb-3">
@@ -1040,6 +1077,7 @@ const firebaseConfig = {
                    ${ticket.parentStoryId ? `<span class="meta-badge" title="Linked user story">&#8618; ${escapeHtml((tickets.find((x) => x.id === ticket.parentStoryId) || {}).ticketId || "")}</span>` : ""}`
               }
             </div>
+            ${ticket.labels && ticket.labels.length ? `<div class="d-flex flex-wrap gap-1 mb-2">${ticket.labels.map(l => `<span class="label-badge">${escapeHtml(l)}</span>`).join("")}</div>` : ""}
             <div class="d-flex justify-content-between align-items-center">
               ${isNote ? "" : `<span class="drag-hint">&#9776; drag</span>`}
               <select class="form-select form-select-sm status-select w-auto">
@@ -1156,6 +1194,11 @@ const firebaseConfig = {
         document.getElementById("inputAssignee").value = ticket ? ticket.assignee || "" : "";
         document.getElementById("inputIssueType").value = ticket ? ticket.issueType || "User Story" : "User Story";
         document.getElementById("inputPhase").value = ticket ? ticket.phase || "Phase0" : "Phase0";
+        const labels = ticket ? ticket.labels || [] : [];
+        document.getElementById("labelDoneAndroid").checked = labels.includes("Done Android");
+        document.getElementById("labelDoneIOS").checked = labels.includes("Done iOS");
+        document.getElementById("labelDoneBackend").checked = labels.includes("Done Backend");
+        document.getElementById("labelDoneWeb").checked = labels.includes("Done Web");
         const parentId = ticket && ticket.parentStoryId ? ticket.parentStoryId : "";
         document.getElementById("inputParentStoryId").value = parentId;
         const parent = parentId ? tickets.find((x) => x.id === parentId) : null;
@@ -1180,6 +1223,11 @@ const firebaseConfig = {
         const issueType = document.getElementById("inputIssueType").value;
         const parentStoryId = document.getElementById("inputParentStoryId").value;
         const phase = document.getElementById("inputPhase").value;
+        const labels = [];
+        if (document.getElementById("labelDoneAndroid").checked) labels.push("Done Android");
+        if (document.getElementById("labelDoneIOS").checked) labels.push("Done iOS");
+        if (document.getElementById("labelDoneBackend").checked) labels.push("Done Backend");
+        if (document.getElementById("labelDoneWeb").checked) labels.push("Done Web");
         if (issueType !== "Note" && status === "Assets") {
           showToast("Only Notes can be placed in Assets");
           return;
@@ -1204,6 +1252,7 @@ const firebaseConfig = {
               platform,
               assignee,
               issueType,
+              labels,
               parentStoryId: issueType === "Subtask" ? parentStoryId : "",
               phase: issueType === "User Story" ? phase : "",
               updatedAt: firebase.firestore.FieldValue.serverTimestamp()
@@ -1219,6 +1268,7 @@ const firebaseConfig = {
               platform,
               assignee,
               issueType,
+              labels,
               parentStoryId: issueType === "Subtask" ? parentStoryId : "",
               phase: issueType === "User Story" ? phase : "",
               status,
