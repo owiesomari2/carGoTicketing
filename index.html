@@ -57,11 +57,26 @@
       min-height: 62vh;
       padding: 1rem;
       transition: background 0.25s ease, box-shadow 0.25s ease, transform 0.2s ease;
+      overflow: hidden;
+      overflow-y: auto;
     }
     .kanban-col.drag-over {
       background: #e2e8fb;
       box-shadow: inset 0 0 0 2px #6366f1;
       transform: scale(1.01);
+    }
+    .kanban-col-read-only {
+      background: #f8fafc;
+      border: 2px dashed #cbd5e1;
+    }
+    .kanban-col-read-only.drag-over {
+      box-shadow: none;
+      transform: none;
+      background: #f8fafc;
+    }
+    .board-row > div {
+      flex: 1 1 0;
+      min-width: 0;
     }
     .col-header {
       display: flex;
@@ -83,6 +98,7 @@
     .dot-todo { background: var(--todo); }
     .dot-inprogress { background: var(--inprogress); }
     .dot-done { background: var(--done); }
+    .dot-requirments { background: #64748b; }
     .count-pill {
       background: #fff;
       border: 1px solid #e2e5ee;
@@ -149,6 +165,21 @@
     .ticket-card.note-card .card-body { padding: 1rem 0.75rem 0.75rem; }
     .ticket-card.note-card .ticket-title { font-style: italic; }
     .ticket-card.note-card .meta-badge { background: rgba(0,0,0,0.06); }
+
+    .ticket-card.requirment-card {
+      --accent: transparent;
+      background: #e0e7ff;
+      border: 1px dashed #818cf8;
+      border-left: none;
+      border-radius: 8px;
+      box-shadow: 0 2px 8px rgba(99,102,241,0.15);
+      cursor: default;
+    }
+    .ticket-card.requirment-card:hover {
+      transform: translateY(-3px) scale(1.01);
+      box-shadow: 0 6px 16px rgba(99,102,241,0.2);
+    }
+    .ticket-card.requirment-card:active { cursor: default; transform: scale(0.98); }
 
     .btn-load-more {
       background: #f1f5f9;
@@ -394,6 +425,7 @@
         <button type="button" class="chip" data-status="To Do">&#128203; To Do</button>
         <button type="button" class="chip" data-status="In Progress">&#128260; In Progress</button>
         <button type="button" class="chip" data-status="Done">&#9989; Done</button>
+        <button type="button" class="chip" data-status="Requirments">&#128209; Requirments</button>
         <span class="filter-divider"></span>
         <span class="filter-label">Platform</span>
         <button type="button" class="chip" data-platform="Android">&#128241; Android</button>
@@ -412,6 +444,7 @@
           <option>Subtask</option>
           <option>Bug</option>
           <option>Note</option>
+          <option>Requirment</option>
         </select>
         <span class="filter-divider"></span>
         <span class="filter-label">Phase</span>
@@ -433,8 +466,8 @@
       </div>
     </div>
 
-    <div class="row g-3" id="board">
-      <div class="col-12 col-md-3">
+    <div class="d-flex gap-3 board-row" id="board" style="overflow-x: auto;">
+      <div class="flex-grow-1">
         <div class="kanban-col" data-status="Assets">
           <div class="col-header">
             <div class="d-flex align-items-center gap-2">
@@ -446,7 +479,19 @@
           <div id="column-assets"></div>
         </div>
       </div>
-      <div class="col-12 col-md-3">
+      <div class="flex-grow-1">
+        <div class="kanban-col kanban-col-read-only" data-status="Requirments">
+          <div class="col-header">
+            <div class="d-flex align-items-center gap-2">
+              <span class="status-dot dot-requirments"></span>
+              <span class="col-title">Requirments</span>
+            </div>
+            <span class="count-pill" id="count-requirments">0</span>
+          </div>
+          <div id="column-requirments"></div>
+        </div>
+      </div>
+      <div class="flex-grow-1">
         <div class="kanban-col" data-status="To Do">
           <div class="col-header">
             <div class="d-flex align-items-center gap-2">
@@ -458,7 +503,7 @@
           <div id="column-todo"></div>
         </div>
       </div>
-      <div class="col-12 col-md-3">
+      <div class="flex-grow-1">
         <div class="kanban-col" data-status="In Progress">
           <div class="col-header">
             <div class="d-flex align-items-center gap-2">
@@ -470,7 +515,7 @@
           <div id="column-inprogress"></div>
         </div>
       </div>
-      <div class="col-12 col-md-3">
+      <div class="flex-grow-1">
         <div class="kanban-col" data-status="Done">
           <div class="col-header">
             <div class="d-flex align-items-center gap-2">
@@ -519,6 +564,7 @@
                 <option>Subtask</option>
                 <option>Bug</option>
                 <option>Note</option>
+                <option>Requirment</option>
               </select>
             </div>
             <div class="col-md-6 d-none" id="parentStoryField">
@@ -670,9 +716,9 @@ const firebaseConfig = {
   messagingSenderId: "268156045194",
   appId: "1:268156045194:web:e0824fa50f170b3cfcaa73"
 };
-    const ISSUE_ICONS = { "User Story": "&#128214;", "Subtask": "&#128203;", "Bug": "&#128027;", "Note": "&#128204;" };
-    const STATUSES = ["Assets", "To Do", "In Progress", "Done"];
-    const ACCENTS = { "Assets": "#8b5cf6", "To Do": "#3b82f6", "In Progress": "#f59e0b", "Done": "#10b981" };
+    const ISSUE_ICONS = { "User Story": "&#128214;", "Subtask": "&#128203;", "Bug": "&#128027;", "Note": "&#128204;", "Requirment": "&#128209;" };
+    const STATUSES = ["Assets", "To Do", "In Progress", "Done", "Requirments"];
+    const ACCENTS = { "Assets": "#8b5cf6", "To Do": "#3b82f6", "In Progress": "#f59e0b", "Done": "#10b981", "Requirments": "#64748b" };
     const isConfigured = !firebaseConfig.apiKey.startsWith("YOUR_");
 
     if (!isConfigured) {
@@ -868,17 +914,21 @@ const firebaseConfig = {
       function updateStatusOptions() {
         const issueType = document.getElementById("inputIssueType").value;
         const isNote = issueType === "Note";
+        const isRequirment = issueType === "Requirment";
         const statusSelect = document.getElementById("inputStatus");
         if (isNote) {
           statusSelect.innerHTML = `<option selected>Assets</option>`;
           statusSelect.disabled = true;
+        } else if (isRequirment) {
+          statusSelect.innerHTML = `<option selected>Requirments</option>`;
+          statusSelect.disabled = true;
         } else {
-          statusSelect.innerHTML = STATUSES.filter(s => s !== "Assets").map(s => `<option ${s === statusSelect.value ? "selected" : ""}>${s}</option>`).join("");
+          statusSelect.innerHTML = STATUSES.filter(s => s !== "Assets" && s !== "Requirments").map(s => `<option ${s === statusSelect.value ? "selected" : ""}>${s}</option>`).join("");
           statusSelect.disabled = false;
         }
-        const hidePlatform = issueType === "User Story" || issueType === "Note";
+        const hidePlatform = issueType === "User Story" || issueType === "Note" || isRequirment;
         document.getElementById("platformField").classList.toggle("d-none", hidePlatform);
-        document.getElementById("assigneeField").classList.toggle("d-none", isNote);
+        document.getElementById("assigneeField").classList.toggle("d-none", isNote || isRequirment);
         const showPhase = issueType === "User Story";
         document.getElementById("phaseField").classList.toggle("d-none", !showPhase);
       }
@@ -976,7 +1026,7 @@ const firebaseConfig = {
       function handleDrop(status) {
         if (!draggedId) return;
         const t = tickets.find((x) => x.id === draggedId);
-        if (status === "Assets") return;
+        if (status === "Assets" || status === "Requirments") return;
         if (t && t.status !== status) {
           t.status = status;
           t.updatedAt = firebase.firestore.Timestamp.now();
@@ -1029,9 +1079,9 @@ const firebaseConfig = {
             ${detailsRow("Title", escapeHtml(ticket.title))}
             ${detailsRow("Status", escapeHtml(ticket.status))}
             ${detailsRow("Issue Type", escapeHtml(ticket.issueType || "User Story"))}
-            ${ticket.issueType !== "User Story" && ticket.issueType !== "Note" ? detailsRow("Platform", escapeHtml(ticket.platform || "Web")) : ""}
+            ${ticket.issueType !== "User Story" && ticket.issueType !== "Note" && ticket.issueType !== "Requirment" ? detailsRow("Platform", escapeHtml(ticket.platform || "Web")) : ""}
             ${detailsRow("Added by", escapeHtml(ticket.addedBy || "Owies"))}
-            ${detailsRow("Assignee", escapeHtml(ticket.assignee || "Unassigned"))}
+            ${ticket.issueType !== "Note" && ticket.issueType !== "Requirment" ? detailsRow("Assignee", escapeHtml(ticket.assignee || "Unassigned")) : ""}
             ${ticket.parentStoryId ? detailsRow("Linked User Story", escapeHtml(parent ? `${parent.ticketId || parent.id} — ${parent.title}` : "—")) : ""}
             ${ticket.labels && ticket.labels.length ? detailsRow("Labels", escapeHtml(ticket.labels.join(", "))) : ""}
             ${detailsRow("Created", formatDate(ticket.createdAt))}
@@ -1053,8 +1103,9 @@ const firebaseConfig = {
       function ticketCard(ticket) {
         const div = document.createElement("div");
         const isNote = ticket.issueType === "Note";
-        div.className = isNote ? "card ticket-card note-card mb-2" : "card ticket-card mb-2";
-        div.draggable = !isNote;
+        const isRequirment = ticket.issueType === "Requirment";
+        div.className = isNote ? "card ticket-card note-card mb-2" : isRequirment ? "card ticket-card requirment-card mb-2" : "card ticket-card mb-2";
+        div.draggable = !isNote && !isRequirment;
         div.style.setProperty("--accent", ACCENTS[ticket.status] || "#94a3b8");
         div.innerHTML = `
           <div class="card-body p-2">
@@ -1071,17 +1122,19 @@ const firebaseConfig = {
             <div class="d-flex flex-wrap gap-1 mb-2">
               ${isNote
                 ? `<span class="meta-badge">Created: ${formatDate(ticket.createdAt)}</span><span class="meta-badge">Updated: ${formatDate(ticket.updatedAt)}</span>`
-                : `${ticket.issueType !== "User Story" ? `<span class="meta-badge">${escapeHtml(ticket.platform || "Web")}</span>` : ""}
-                   <span class="meta-badge">&#128101; ${escapeHtml(ticket.assignee || "Unassigned")}</span>
-                   <span class="meta-badge">${escapeHtml(ticket.issueType || "User Story")}</span>
-                   ${ticket.parentStoryId ? `<span class="meta-badge" title="Linked user story">&#8618; ${escapeHtml((tickets.find((x) => x.id === ticket.parentStoryId) || {}).ticketId || "")}</span>` : ""}`
+                : isRequirment
+                  ? `<span class="meta-badge">${escapeHtml(ticket.issueType)}</span>`
+                  : `${ticket.issueType !== "User Story" ? `<span class="meta-badge">${escapeHtml(ticket.platform || "Web")}</span>` : ""}
+                     <span class="meta-badge">&#128101; ${escapeHtml(ticket.assignee || "Unassigned")}</span>
+                     <span class="meta-badge">${escapeHtml(ticket.issueType || "User Story")}</span>
+                     ${ticket.parentStoryId ? `<span class="meta-badge" title="Linked user story">&#8618; ${escapeHtml((tickets.find((x) => x.id === ticket.parentStoryId) || {}).ticketId || "")}</span>` : ""}`
               }
             </div>
             ${ticket.labels && ticket.labels.length ? `<div class="d-flex flex-wrap gap-1 mb-2">${ticket.labels.map(l => `<span class="label-badge">${escapeHtml(l)}</span>`).join("")}</div>` : ""}
             <div class="d-flex justify-content-between align-items-center">
-              ${isNote ? "" : `<span class="drag-hint">&#9776; drag</span>`}
+              ${isNote || isRequirment ? "" : `<span class="drag-hint">&#9776; drag</span>`}
               <select class="form-select form-select-sm status-select w-auto">
-                ${isNote ? `<option selected>Assets</option>` : STATUSES.filter(s => s !== "Assets").map((s) => `<option ${s === ticket.status ? "selected" : ""}>${s}</option>`).join("")}
+                ${isNote ? `<option selected>Assets</option>` : isRequirment ? `<option selected>Requirments</option>` : STATUSES.filter(s => s !== "Assets" && s !== "Requirments").map((s) => `<option ${s === ticket.status ? "selected" : ""}>${s}</option>`).join("")}
               </select>
             </div>
           </div>`;
@@ -1115,6 +1168,11 @@ const firebaseConfig = {
           div.querySelector(".status-select").title = "Status locked for notes";
           div.querySelector(".status-select").innerHTML = `<option selected>Assets</option>`;
         }
+        if (isRequirment) {
+          div.querySelector(".status-select").disabled = true;
+          div.querySelector(".status-select").title = "Status locked for requirments";
+          div.querySelector(".status-select").innerHTML = `<option selected>Requirments</option>`;
+        }
         div.querySelector(".btn-edit").addEventListener("click", () => openTicketModal(ticket));
         div.querySelector(".btn-del").addEventListener("click", () => {
           pendingDeleteId = ticket.id;
@@ -1129,7 +1187,10 @@ const firebaseConfig = {
         STATUSES.forEach((status) => {
           const col = document.getElementById("column-" + status.toLowerCase().replace(" ", ""));
           const items = list
-            .filter((t) => t.status === status)
+            .filter((t) => {
+              if (t.issueType === "Requirment") return status === "Requirments";
+              return t.status === status;
+            })
             .sort((a, b) => (b.updatedAt ? b.updatedAt.toMillis() : 0) - (a.updatedAt ? a.updatedAt.toMillis() : 0));
           col.innerHTML = "";
           if (items.length === 0) {
@@ -1234,6 +1295,14 @@ const firebaseConfig = {
         }
         if (issueType === "Note" && status !== "Assets") {
           showToast("Notes must be placed in Assets");
+          return;
+        }
+        if (issueType !== "Requirment" && status === "Requirments") {
+          showToast("Only Requirments can be placed in Requirments");
+          return;
+        }
+        if (issueType === "Requirment" && status !== "Requirments") {
+          showToast("Requirments must be placed in Requirments");
           return;
         }
         if (issueType === "Subtask" && !parentStoryId) {
